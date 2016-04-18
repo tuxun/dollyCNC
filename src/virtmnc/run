@@ -1,0 +1,17 @@
+#!/bin/bash
+#http://misc.flogisoft.com/bash/tip_colors_and_formatting
+reset \
+&& echo -e "\e[92m/**********M4K1NG DR1V3R:***********”\e[0m/" && make silent \
+&& echo -e "\e[92m/**********N3W DR1V3R 0K!***********”\e[0m/" && make mod_reload \
+&& if [ -n "`lsmod | grep -s hid`" ]; then 
+	echo "" 
+	else modprobe hid 
+	fi \
+&& if [ -n "`lsmod | grep -s hid`" ]; then
+	echo -e "\e[92m/*******L0ad1ng H1D dr1v3r 0k*******”\e[0m/"
+	else echo -e "\e[91m/*******L0ad1ng dr1v3r F41L3D****”\e[0m/"
+   fi \
+&& ./test.sh \
+&& echo -e "\e[92m/***************dm35g:**************”\e[0m/" && dmesg | tail -n 3 \
+&& echo -e "\e[92m/**************t35t 0k!*************”\e[0m/";
+

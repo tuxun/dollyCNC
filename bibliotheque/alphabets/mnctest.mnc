@@ -1,0 +1,20 @@
+[ParametresSequences]
+NombreSequences=2
+[Sequence1]
+NombrePoints=3
+1=77.560390:9.519005:0
+2=77.560390:47.636830:0
+3=35.325370:89.899600:0
+[Sequence2]
+NombrePoints=3
+1=7.560390:2.519005:0
+2=7.560390:4.636830:0
+3=3.325370:8.899600:0
+[Bloc]
+BlocX=150.000000
+BlocY=150.000000
+[Decoupe]
+TypeEntree=0
+TypeSortie=2
+Matiere=Réglage par défaut
+Chauffe=70

